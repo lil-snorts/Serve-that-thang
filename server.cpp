@@ -53,20 +53,19 @@ int main()
     // Define a sockaddr_in structure to specify the client address
     struct sockaddr_in client_addr;
     socklen_t client_addr_len = sizeof(client_addr); // Length of the client address structure
-
+    int new_sockfd = accept(sockfd, (struct sockaddr *)&client_addr, &client_addr_len);
+    if (new_sockfd == -1)
+    {
+        // Output an error message if socket accepting failed
+        std::cerr << "Socket accepting failed." << std::endl;
+        return 1; // Exit the program with an error code
+    }
     while (true)
     {
         // Accept an incoming connection using the accept() function
         // sockfd: The socket file descriptor
         // (struct sockaddr *)&client_addr: Pointer to the client address structure
         // &client_addr_len: Pointer to the length of the client address structure
-        int new_sockfd = accept(sockfd, (struct sockaddr *)&client_addr, &client_addr_len);
-        if (new_sockfd == -1)
-        {
-            // Output an error message if socket accepting failed
-            std::cerr << "Socket accepting failed." << std::endl;
-            return 1; // Exit the program with an error code
-        }
 
         char buffer[100];
         auto bytesRead = read(new_sockfd, buffer, sizeof(buffer) - 1); // Read data from the client into the buffer
@@ -75,46 +74,54 @@ int main()
         {
             std::cerr << "Error reading from socket." << std::endl;
             close(new_sockfd);
-            continue; // Skip to the next iteration of the loop
+            break; // Skip to the next iteration of the loop
         }
         buffer[bytesRead] = '\0'; // Null-terminate the buffer
         std::cout << "message was: " << buffer << std::endl;
 
-        std::string bufStr(buffer);
+        // the +1 moves the poiner of the buffer to the next index
+        std::string bufStr(buffer + sizeof(char));
 
         switch (buffer[0])
         {
-        case 'R':
-            /* code */
-            {
-                int idx = (buffer[1] - '0') * 100 + (buffer[2] - '0') * 10 + (buffer[3] - '0');
-                std::cout << "Index requested: " << idx << std::endl;
-                if (idx >= allData.size())
-                {
-                    std::cout << "Invalid index" << std::endl;
-                    std::string response = "Invalid Request\n";
-
-                    send(new_sockfd, response.c_str(), response.size(), 0);
-                    // TODO does this free resources?
-                    close(new_sockfd);
-                    continue;
-                }
-
-                while (0, idx < allData.size(), idx++)
-                {
-                    // TODO catch error
-                    std::cout << "sending: " << allData[idx] << std::endl;
-
-                    // TODO how do i send many responses to the client?
-                    send(new_sockfd, allData[idx].c_str(), allData[idx].size(), 1 + idx == allData.size() ? 0 : MSG_MORE);
-                }
-                std::cout << "Finished :)" << std::endl;
-            }
-            break;
-        case 'W':
+        case 'W': // write
             allData.push_back(bufStr);
-            // code for WRITE
-            break;
+            // No break so the client can get the most up to date info
+        case 'R': // read
+        {
+            // limiting reads to the size of 1 char (int4)
+            int idx = buffer[1];
+            std::cout << "Index requested: " << idx << std::endl;
+            if (idx == 13)
+            {
+                idx = 0;
+            }
+            else if (idx >= allData.size())
+            {
+                std::cout << "Invalid index" << std::endl;
+                std::string response = "Invalid Request\n";
+
+                send(new_sockfd, response.c_str(), response.size(), 0);
+                // TODO does this free resources?
+                close(new_sockfd);
+                continue;
+            }
+
+            std::cout << "idx < allData.size()" << (idx < allData.size()) << std::endl;
+            std::cout << "idx: " << idx << " allData.size: " << allData.size() << std::endl;
+
+            for (idx; idx < allData.size(); idx++)
+            {
+                // TODO catch error
+                std::cout << "sending: " << allData[idx] << std::endl;
+
+                // TODO how do i send many responses to the client?
+                send(new_sockfd, allData[idx].c_str(), allData[idx].size(), 1 + idx == allData.size() ? 0 : MSG_MORE);
+            }
+            std::cout << "Finished :)" << std::endl;
+        }
+        break;
+
         default:
             std::string response = "Invalid Request\n";
 
@@ -134,7 +141,6 @@ int main()
             // Output a success message if the socket was accepted successfully
             std::cout << "Client accepted successfully." << std::endl;
         }
-        close(new_sockfd);
     }
     close(sockfd);
     return 0; // Exit the program successfully
