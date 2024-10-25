@@ -45,11 +45,11 @@ This repository contains a simple implementation of a TCP server and client in C
 
 ## TODOs
 
-1. [ ] Add a `write`/POST function for the server to allow clients to write to the chat log.
+1. [x] Add a `write`/POST function for the server to allow clients to write to the chat log.
     1. [ ] add functionality to allow clients to send larger payloads
     2. [ ] Add functionality to ensure clients must wait their turn before the logs are written to.
-2. [ ] Add a `read`/GET function for the server to allow clients to retrieve the entire chat log.
-3. [ ] Implement threading so that multiple clients can interact at the same time
+2. [x] Add a `read`/GET function for the server to allow clients to retrieve the entire chat log.
+3. [ ] Implement mutexes so that multiple clients can interact at the same time
 4. [ ] Implement usernames for messages to identify who is sending messages.
 5. [ ] Add timestamps to messages to indicate when they were received by the server.
 6. [ ] Implement redundancy for message logs and allow for persistence.
