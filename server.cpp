@@ -102,13 +102,20 @@ int handleConnection(int client_sockfd, std::vector<std::string> &allData) {
         // the +1 moves the poiner of the buffer to the next index
         std::string bufStr(buffer + sizeof(char));
 
-        for (int i = 0; i < 10; i++) {
+        for (char i = 0; i < 10; i++) {
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
-            char sleep_buffer[2];
-            sleep_buffer[1] = '\0';
-            sleep_buffer[0] = i;
-            send(client_sockfd, &sleep_buffer, sizeof(sleep_buffer),
-                 9 == i ? 0 : MSG_MORE);
+            if (i != 9) {
+                char sleep_buffer[2];
+                sleep_buffer[0] = i + '0';
+                sleep_buffer[1] = '\0';
+                send(client_sockfd, sleep_buffer, sizeof(sleep_buffer), 0);
+            } else {
+                char sleep_buffer[3];
+                sleep_buffer[0] = i + '0';
+                sleep_buffer[1] = '\0';
+                sleep_buffer[2] = '\0';
+                send(client_sockfd, sleep_buffer, sizeof(sleep_buffer), 0);
+            }
         }
 
         switch (buffer[0]) {
@@ -121,7 +128,8 @@ int handleConnection(int client_sockfd, std::vector<std::string> &allData) {
                 // limiting reads to the size of 1 char (int4)
                 int idx = buffer[1];
                 std::cout << "Index requested: " << idx << std::endl;
-                if (idx == 13) {
+                if (idx == '\n' || idx == '\0' || idx == '\r') {
+                    // treat like its a request for all logs
                     idx = 0;
                 } else if (idx >= allData.size()) {
                     std::cout << "Invalid index" << std::endl;
@@ -157,8 +165,7 @@ int handleConnection(int client_sockfd, std::vector<std::string> &allData) {
                 send(client_sockfd, response.c_str(), response.size(), 0);
                 close(client_sockfd);
                 // TODO exit thread
-                continue;
-        }
+                }
 
         std::string response = "\n";
 
