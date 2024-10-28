@@ -112,7 +112,7 @@ int handleConnection(int client_sockfd, std::vector<std::string> &allData) {
             } else {
                 char sleep_buffer[3];
                 sleep_buffer[0] = i + '0';
-                sleep_buffer[1] = '\0';
+                sleep_buffer[1] = '\n';
                 sleep_buffer[2] = '\0';
                 send(client_sockfd, sleep_buffer, sizeof(sleep_buffer), 0);
             }
@@ -165,7 +165,7 @@ int handleConnection(int client_sockfd, std::vector<std::string> &allData) {
                 send(client_sockfd, response.c_str(), response.size(), 0);
                 close(client_sockfd);
                 // TODO exit thread
-                }
+        }
 
         std::string response = "\n";
 
