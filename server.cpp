@@ -3,6 +3,8 @@
 
 #include "server.h"
 
+std::mutex write_mutex;
+
 int main() {
     std::vector<std::string> allData;
 
@@ -49,9 +51,7 @@ int main() {
     // Define a sockaddr_in structure to specify the client address
     struct sockaddr_in client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
-    // TODO while true
     while (1) {
-        // TODO accept
         int new_sockfd =
             accept(sockfd, (struct sockaddr *)&client_addr, &client_addr_len);
         if (new_sockfd == -1) {
@@ -74,9 +74,6 @@ int main() {
 }
 
 int handleConnection(int client_sockfd, std::vector<std::string> &allData) {
-    // TODO do something with this retFlag
-    bool retFlag = true;
-    // TODO start thread to handle request
     if (client_sockfd == -1) {
         // Output an error message if socket accepting failed
         std::cerr << "Socket accepting failed." << std::endl;
@@ -89,8 +86,6 @@ int handleConnection(int client_sockfd, std::vector<std::string> &allData) {
             client_sockfd, buffer,
             sizeof(buffer) - 1);  // Read data from the client into the buffer
 
-        // TODO wait for sema to be free
-
         if (bytesRead < 0) {
             std::cerr << "Error reading from socket." << std::endl;
             close(client_sockfd);
@@ -102,26 +97,14 @@ int handleConnection(int client_sockfd, std::vector<std::string> &allData) {
         // the +1 moves the poiner of the buffer to the next index
         std::string bufStr(buffer + sizeof(char));
 
-        for (char i = 0; i < 10; i++) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
-            if (i != 9) {
-                char sleep_buffer[2];
-                sleep_buffer[0] = i + '0';
-                sleep_buffer[1] = '\0';
-                send(client_sockfd, sleep_buffer, sizeof(sleep_buffer), 0);
-            } else {
-                char sleep_buffer[3];
-                sleep_buffer[0] = i + '0';
-                sleep_buffer[1] = '\n';
-                sleep_buffer[2] = '\0';
-                send(client_sockfd, sleep_buffer, sizeof(sleep_buffer), 0);
-            }
-        }
-
         switch (buffer[0]) {
             case 'W':  // write
+                write_mutex.lock();
+                // mutex might be pointless if c++ handles parallel writes to
+                // vectors
+                sleeptimer(client_sockfd, 3);
                 allData.push_back(bufStr);
-                // No break so the client can get the most up to date info
+                write_mutex.unlock();
                 break;
             case 'R':  // read
             {
@@ -136,7 +119,6 @@ int handleConnection(int client_sockfd, std::vector<std::string> &allData) {
                     std::string response = "Invalid Request\n";
 
                     send(client_sockfd, response.c_str(), response.size(), 0);
-                    // TODO exit thread
                     continue;
                 }
 
@@ -164,18 +146,36 @@ int handleConnection(int client_sockfd, std::vector<std::string> &allData) {
 
                 send(client_sockfd, response.c_str(), response.size(), 0);
                 close(client_sockfd);
-                // TODO exit thread
+                return 1;
         }
 
         std::string response = "\n";
 
         if (!send(client_sockfd, response.c_str(), response.size(), 0)) {
             std::cout << "Client did not successfully close" << std::endl;
+            return -1;
         } else {
             // Output a success message if the socket was accepted successfully
             std::cout << "Client accepted successfully." << std::endl;
+            return 1;
         }
     }
-    retFlag = false;
-    return retFlag;
+}
+
+void sleeptimer(int client_sockfd, int sleep_count_half_secs) {
+    for (char i = 0; i < sleep_count_half_secs; i++) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        if (i != 9) {
+            char sleep_buffer[2];
+            sleep_buffer[0] = i + '0';
+            sleep_buffer[1] = '\0';
+            send(client_sockfd, sleep_buffer, sizeof(sleep_buffer), 0);
+        } else {
+            char sleep_buffer[3];
+            sleep_buffer[0] = i + '0';
+            sleep_buffer[1] = '\n';
+            sleep_buffer[2] = '\0';
+            send(client_sockfd, sleep_buffer, sizeof(sleep_buffer), 0);
+        }
+    }
 }
