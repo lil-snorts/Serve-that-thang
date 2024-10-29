@@ -158,13 +158,12 @@ int handleConnection(int client_sockfd, std::vector<std::string> &allData) {
 void sleeptimer(int client_sockfd, int sleep_count_half_secs) {
     for (char i = 0; i < sleep_count_half_secs; i++) {
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        char sleep_buffer[3];
         if (i != 9) {
-            char sleep_buffer[2];
             sleep_buffer[0] = i + '0';
             sleep_buffer[1] = '\0';
             send(client_sockfd, sleep_buffer, sizeof(sleep_buffer), 0);
         } else {
-            char sleep_buffer[3];
             sleep_buffer[0] = i + '0';
             sleep_buffer[1] = '\n';
             sleep_buffer[2] = '\0';
