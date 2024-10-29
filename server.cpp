@@ -43,12 +43,14 @@ int main() {
 
     std::vector<std::thread> client_serverThreads;
 
-    // TODO create a list of sockaddr_in to itr through for round robbin
-    // serving?
-    // TODO cont. Or Highest-Priority serving. Who ever has the mutex gets
-    // served till its free?
-
-    // Define a sockaddr_in structure to specify the client address
+    /**
+    //TODO this vec is only ever added to.
+    // TODO Should the main thread manage each thread or should
+    // TODO. each thread just have a idle timer and be forcibly terminated if
+    the timer exceedes
+    // TODO. an upper limit??? Thoughts that will have to be delt with
+    eventually...
+    */
     struct sockaddr_in client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
     while (1) {
@@ -148,18 +150,9 @@ int handleConnection(int client_sockfd, std::vector<std::string> &allData) {
                 close(client_sockfd);
                 return 1;
         }
-
-        std::string response = "\n";
-
-        if (!send(client_sockfd, response.c_str(), response.size(), 0)) {
-            std::cout << "Client did not successfully close" << std::endl;
-            return -1;
-        } else {
-            // Output a success message if the socket was accepted successfully
-            std::cout << "Client accepted successfully." << std::endl;
-            return 1;
-        }
     }
+    std::cout << "Client did not successfully close" << std::endl;
+    return -1;
 }
 
 void sleeptimer(int client_sockfd, int sleep_count_half_secs) {
