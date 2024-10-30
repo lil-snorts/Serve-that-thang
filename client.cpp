@@ -1,7 +1,9 @@
+#include <fcntl.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <iostream>
 #include <string>
 #include <thread>
@@ -9,6 +11,7 @@
 int main() {
     int offset = 0;
     int clientSocket = socket(AF_INET, SOCK_STREAM, 0);
+    fcntl(clientSocket, F_SETFL, O_NONBLOCK);
     sockaddr_in serverAddy;
 
     serverAddy.sin_family = AF_INET;
@@ -18,26 +21,48 @@ int main() {
     connect(clientSocket, (struct sockaddr*)&serverAddy, sizeof(serverAddy));
 
     std::string initConnection = "R";
+
     send(clientSocket, initConnection.c_str(), initConnection.size(), 0);
 
-    while (1) {
+    std::cout << "Sent" << std::endl;
+    while (true) {
+        // TODO read all events from the server
         std::this_thread::sleep_for(std::chrono::milliseconds(20));
         char buffer[100];
         auto bytesRead = read(clientSocket, buffer, sizeof(buffer) - 1);
-        buffer[bytesRead] = '\0';  // Null-terminate the buffer
+        std::cout << "read from the server" << std::endl;
+        buffer[bytesRead] = '\0';
+
+        // Null-terminate the buffer
+
         std::cout << "message was: " << buffer << std::endl;
-        if (0 == bytesRead) {
+
+        if (-1 == bytesRead) {
             break;
         }
-        offset++;
+
+        for (char byte : buffer) {
+            if ('\n' == byte) {
+                offset++;
+            }
+        }
     }
+
+    // while (true) {
+    std::cout << "offset: " << offset << std::endl;
     // wait for input from the user
 
+    std::string userInput;
+    std::cin >> userInput;
+
+    std::cout << "DEBUG: user inp: " << userInput;
     // send input
+    send(clientSocket, userInput.c_str(), userInput.size(), 0);
 
     // continuously update the chat log
     // print output of the server
 
     // save current chat log offset to allow for updating from an offset
+    // }
     close(clientSocket);
 }
