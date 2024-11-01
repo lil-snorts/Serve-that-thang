@@ -8,6 +8,9 @@
 #include <string>
 #include <thread>
 
+const char READ = 'R';
+const char WRITE = 'W';
+
 int main() {
     int offset = 0;
     int clientSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -20,13 +23,14 @@ int main() {
 
     connect(clientSocket, (struct sockaddr*)&serverAddy, sizeof(serverAddy));
 
-    std::string initConnection = "R";
-
-    send(clientSocket, initConnection.c_str(), initConnection.size(), 0);
-
-    std::cout << "Sent" << std::endl;
     while (true) {
-        // TODO read all events from the server
+        std::string readRequest(1, READ);
+        readRequest = readRequest + std::string(1, '0' + offset);
+
+        send(clientSocket, readRequest.c_str(), readRequest.size(), 0);
+        std::cout << "Sent: " << readRequest << std::endl;
+
+        std::cout << "DEBUG: requesting initial data from server " << std::endl;
         std::this_thread::sleep_for(std::chrono::milliseconds(20));
         char buffer[100];
         auto bytesRead = read(clientSocket, buffer, sizeof(buffer) - 1);
@@ -35,7 +39,7 @@ int main() {
 
         // Null-terminate the buffer
 
-        std::cout << "message was: " << buffer << std::endl;
+        std::cout << "message was:\n" << buffer << std::endl;
 
         if (-1 == bytesRead) {
             break;
