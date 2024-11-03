@@ -63,7 +63,7 @@ A simple chat server built in C++ that uses socket programming to handle multipl
 
 ### Client
 
-- [ ] Develop a basic client application.
+- [x] Develop a basic client application.
 - [ ] Auto-update chat log to reflect current messages.
 - [ ] Parse all entered data as `write` requests.
 - [ ] Enable username attachment for chat messages.
