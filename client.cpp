@@ -1,3 +1,5 @@
+#include "client.h"
+
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -8,13 +10,23 @@
 #include <string>
 #include <thread>
 
+#define DEBUG_ENABLED false
+#define DEBUG(output)                                  \
+    if (DEBUG_ENABLED) {                               \
+        std::cout << "DEBUG: " << output << std::endl; \
+    }
+
 const char READ = 'R';
 const char WRITE = 'W';
 
+void handleError(int errCode) {
+    std::cerr << "Err code " << errCode << ", ignoring." << std::endl;
+}
+
 int main() {
-    int offset = 0;
     int clientSocket = socket(AF_INET, SOCK_STREAM, 0);
     fcntl(clientSocket, F_SETFL, O_NONBLOCK);
+    // fcntl(clientSocket, F_SETFL, 0);
     sockaddr_in serverAddy;
 
     serverAddy.sin_family = AF_INET;
@@ -23,50 +35,64 @@ int main() {
 
     connect(clientSocket, (struct sockaddr*)&serverAddy, sizeof(serverAddy));
 
+    // TODO get a thread to do this always
+    std::thread readerThread(readFromServer, clientSocket);
+
     while (true) {
+        // wait for input from the user
+
+        std::string userInput;
+        std::cin >> userInput;
+
+        userInput = "W" + userInput;
+
+        std::cout << "user inp: " << userInput << std::endl;
+        // send input
+        send(clientSocket, userInput.c_str(), userInput.size(), 0);
+
+        // continuously update the chat log
+        // print output of the server
+
+        // save current chat log offset to allow for updating from an offset
+    }
+    close(clientSocket);
+}
+
+void readFromServer(int clientSocket) {
+    int offset = 0;
+    char buffer[100];
+    while (true) {
+        for (size_t i = 0; i < 100; i++) {
+            buffer[i] = '\0';
+        }
+
         std::string readRequest(1, READ);
+        // TODO this is assuming that the number is 0 <= num <= 9
         readRequest = readRequest + std::string(1, '0' + offset);
 
         send(clientSocket, readRequest.c_str(), readRequest.size(), 0);
-        std::cout << "Sent: " << readRequest << std::endl;
+        DEBUG("requesting data from server, Sent: " << readRequest);
 
-        std::cout << "DEBUG: requesting initial data from server " << std::endl;
-        std::this_thread::sleep_for(std::chrono::milliseconds(20));
-        char buffer[100];
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
         auto bytesRead = read(clientSocket, buffer, sizeof(buffer) - 1);
-        std::cout << "read from the server" << std::endl;
-        buffer[bytesRead] = '\0';
-
-        // Null-terminate the buffer
-
-        std::cout << "message was:\n" << buffer << std::endl;
 
         if (-1 == bytesRead) {
-            break;
-        }
+            std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+            DEBUG("No data")
+        } else {
+            // Null-terminate the buffer
+            buffer[bytesRead] = '\0';
 
-        for (char byte : buffer) {
-            if ('\n' == byte) {
-                offset++;
+            DEBUG("data recieved:\n" << buffer << "\n");
+
+            std::cout << ">" << buffer << std::endl;
+
+            for (char byte : buffer) {
+                if ('\n' == byte) {
+                    offset++;
+                }
             }
+            DEBUG("offset: " << offset);
         }
     }
-
-    // while (true) {
-    std::cout << "offset: " << offset << std::endl;
-    // wait for input from the user
-
-    std::string userInput;
-    std::cin >> userInput;
-
-    std::cout << "DEBUG: user inp: " << userInput;
-    // send input
-    send(clientSocket, userInput.c_str(), userInput.size(), 0);
-
-    // continuously update the chat log
-    // print output of the server
-
-    // save current chat log offset to allow for updating from an offset
-    // }
-    close(clientSocket);
 }

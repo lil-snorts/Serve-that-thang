@@ -14,12 +14,11 @@
 #include <vector>
 int handleConnection(int new_sockfd, std::vector<std::string> &allData);
 
-void handleWriteOrErrorOutClient(int client_sockfd,
-                                 std::vector<std::string> &allData,
-                                 std::string &bufStr, int &retFlag);
+void handleWrite(int client_sockfd, std::vector<std::string> &allData,
+                 std::string &bufStr, int &retFlag);
 
 void handleRead(char buffer[100], std::vector<std::string> &allData,
                 int client_sockfd, int &retFlag);
 
-void sleeptimer(int client_sockfd, int sleep_count_half_secs);
+void sleeptimer(int sleep_count_half_secs);
 void handle_sigpipe(int signum);
