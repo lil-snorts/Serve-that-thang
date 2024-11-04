@@ -64,7 +64,7 @@ A simple chat server built in C++ that uses socket programming to handle multipl
 ### Client
 
 - [x] Develop a basic client application.
-- [ ] Auto-update chat log to reflect current messages.
+- [x] Auto-update chat log to reflect current messages.
 - [ ] Parse all entered data as `write` requests.
 - [ ] Enable username attachment for chat messages.
 
@@ -72,47 +72,16 @@ A simple chat server built in C++ that uses socket programming to handle multipl
 
 Contributions are welcome! Please feel free to submit a pull request or open an issue for any enhancements or bug fixes.
 
----
-
 ## Code Overview
 
 The server code includes a `write` mutex to synchronize client access to the chat log. Each client connection is handled in a separate thread, and the server supports both read and write operations.
 
-### Key Methods
-
-- **`main()`**: Sets up the server, binds to a socket, listens for connections, and spawns threads for each client.
-- **`handleConnection()`**: Manages client requests. Handles different request types (`write` and `read`) based on the first character of the client's message.
-- **`sleeptimer()`**: Simulates a delay with intermediate updates sent back to the client.
-
-### Sample Code Comments
-
-```cpp
-std::mutex write_mutex;
-
-// Main function to initialize the server and manage client connections
-int main() {
-    // ...
-    // Create and configure the socket for client connections
-    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    // Set up server socket configurations and error handling
-    // Bind and listen for incoming connections on port 8080
-    // Accept client connections in a loop, spawning threads to handle each client
-}
-
-// Function to handle incoming client connections and requests
-int handleConnection(int client_sockfd, std::vector<std::string> &allData) {
-    // Read client data, process 'write' or 'read' requests
-    // Use mutex locks for 'write' requests to maintain data integrity
-    // Send appropriate responses to the client based on request type
-}
-
-// Helper function to simulate a delay for the client
-void sleeptimer(int client_sockfd, int sleep_count_half_secs) {
-    // Iteratively sleeps and sends intermediate updates to the client
-}
-```
-
 ### Notable Bugs/Issues
+
+- [x] When clients send requests in quick succession, the socket buffer will store multiple requests and string them together to act like the same message
+  - possible fix is suffixing messages with Newlines `\n`
+- [x] When clients send a message and the readThread requests for new messages they will be treated as the same message ![alt text](readMeBugSection/image.png)
+  - possible fix: server reads from the buffer, parses the messages then services each message.
 
 ---
 
