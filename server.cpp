@@ -100,17 +100,8 @@ int handleConnection(int client_sockfd, std::vector<std::string> &allData) {
         }
         char buffer[BUFFER_SIZE];
         while (true) {
-            for (size_t i = 0; i < BUFFER_SIZE; i++) {
-                buffer[i] = '\0';
-            }
-
             // Read data from the client into the buffer
             // the +1 moves the poiner of the buffer to the next index
-            {
-                std::string bufStr(buffer + sizeof(char));
-                bufStr = bufStr + "\n";
-                std::cout << bufStr << std::endl;
-            }
             auto bytesRead = read(client_sockfd, buffer, sizeof(buffer) - 1);
 
             // ! TODO this will prevent messages larger than 99 chars
@@ -120,16 +111,10 @@ int handleConnection(int client_sockfd, std::vector<std::string> &allData) {
                 return 1;
             }
 
-            buffer[bytesRead + 1] = '\0';  // Null-terminate the buffer
+            // Null-terminate the buffer
+            buffer[bytesRead] = '\0';
             std::cout << "message was: " << buffer << std::endl;
-            // for (size_t i = 0; i < BUFFER_SIZE; i++) {
-            //     std::cout << i << ": " << buffer[i] << std::endl;
-            // }
-
-            // the +1 moves the poiner of the buffer to the next index
-            // skipping the READ or WRITE part
             std::string bufStr(buffer + sizeof(char));
-            bufStr = bufStr + "\n";
 
             int retFlag = IN_PROGRESS_FLAG;
             switch (buffer[0]) {
@@ -145,7 +130,6 @@ int handleConnection(int client_sockfd, std::vector<std::string> &allData) {
                     if (retFlag == SUCCESS_FLAG) continue;
                 default:
                     std::string response = "Invalid Request\n";
-
                     send(client_sockfd, response.c_str(), response.size(), 0);
                     close(client_sockfd);
                     return 1;
@@ -162,7 +146,7 @@ void handleWrite(int client_sockfd, std::vector<std::string> &allData,
                  std::string &bufStr, int &retFlag) {
     write_mutex.lock();
     sleeptimer(3);
-    allData.push_back(bufStr);
+    allData.push_back(bufStr + "\n");
     write_mutex.unlock();
     retFlag = SUCCESS_FLAG;
     return;
@@ -170,7 +154,7 @@ void handleWrite(int client_sockfd, std::vector<std::string> &allData,
 
 void handleRead(char buffer[100], std::vector<std::string> &allData,
                 int client_sockfd, int &retFlag) {
-    // limiting reads to the size of 1 char (int4)
+        // limiting reads to the size of 1 char (int4)
     int idx = buffer[1] - '0';
     std::cout << "Index requested: " << buffer[1] << std::endl;
     if (buffer[1] == '\n' || buffer[1] == '\0' || buffer[1] == '\r') {
@@ -178,16 +162,12 @@ void handleRead(char buffer[100], std::vector<std::string> &allData,
         idx = 0;
     } else if (idx >= allData.size()) {
         std::cout << "Invalid index" << std::endl;
-        std::string response = "Invalid Request\n";
-
         send(client_sockfd, NULL, 0, 0);
-
         retFlag = SUCCESS_FLAG;
         return;
     }
 
     std::cout << "idx < allData.size()" << (idx < allData.size()) << std::endl;
-
     std::cout << "idx: " << idx << " allData.size: " << allData.size()
               << std::endl;
 

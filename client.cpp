@@ -40,20 +40,14 @@ int main() {
 
     while (true) {
         // wait for input from the user
-
         std::string userInput;
-        std::cin >> userInput;
+        std::getline(std::cin, userInput);
 
         userInput = "W" + userInput;
 
         std::cout << "user inp: " << userInput << std::endl;
         // send input
         send(clientSocket, userInput.c_str(), userInput.size(), 0);
-
-        // continuously update the chat log
-        // print output of the server
-
-        // save current chat log offset to allow for updating from an offset
     }
     close(clientSocket);
 }
@@ -62,26 +56,25 @@ void readFromServer(int clientSocket) {
     int offset = 0;
     char buffer[100];
     while (true) {
-        for (size_t i = 0; i < 100; i++) {
-            buffer[i] = '\0';
-        }
-
         std::string readRequest(1, READ);
+
         // TODO this is assuming that the number is 0 <= num <= 9
+
         readRequest = readRequest + std::string(1, '0' + offset);
 
         send(clientSocket, readRequest.c_str(), readRequest.size(), 0);
         DEBUG("requesting data from server, Sent: " << readRequest);
 
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
-        auto bytesRead = read(clientSocket, buffer, sizeof(buffer) - 1);
+        auto bytesRead = read(clientSocket, buffer, sizeof(buffer) - 2);
 
         if (-1 == bytesRead) {
             std::this_thread::sleep_for(std::chrono::milliseconds(5000));
             DEBUG("No data")
         } else {
             // Null-terminate the buffer
-            buffer[bytesRead] = '\0';
+            buffer[bytesRead] = '\n';
+            buffer[bytesRead + 1] = '\0';
 
             DEBUG("data recieved:\n" << buffer << "\n");
 
