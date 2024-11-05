@@ -33,7 +33,7 @@ int main() {
     serverAddy.sin_port = htons(8080);
     serverAddy.sin_addr.s_addr = INADDR_ANY;
 
-    connect(clientSocket, (struct sockaddr*)&serverAddy, sizeof(serverAddy));
+    connect(clientSocket, (struct sockaddr *)&serverAddy, sizeof(serverAddy));
 
     // TODO get a thread to do this always
     std::thread readerThread(readFromServer, clientSocket);
@@ -65,27 +65,36 @@ void readFromServer(int clientSocket) {
         send(clientSocket, readRequest.c_str(), readRequest.size(), 0);
         DEBUG("requesting data from server, Sent: " << readRequest);
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
-        auto bytesRead = read(clientSocket, buffer, sizeof(buffer) - 2);
+        ssize_t bytesRead;
+        DEBUG("data recieved: ...\n")
 
+        readFromSocket(bytesRead, clientSocket, buffer, offset);
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    }
+}
+
+void readFromSocket(ssize_t &bytesRead, int clientSocket, char buffer[100],
+                    int &offset) {
+    while ((bytesRead = read(clientSocket, buffer, sizeof(buffer) - 1)) > 0) {
         if (-1 == bytesRead) {
             std::this_thread::sleep_for(std::chrono::milliseconds(5000));
             DEBUG("No data")
+            break;
+        } else if (0 == bytesRead) {
+            // ! there is more data in the buffer
+            DEBUG("encountered EOF")
+            break;
         } else {
             // Null-terminate the buffer
-            buffer[bytesRead] = '\n';
-            buffer[bytesRead + 1] = '\0';
+            buffer[bytesRead] = '\0';
+            std::cout << buffer;
 
-            DEBUG("data recieved:\n" << buffer << "\n");
-
-            std::cout << ">" << buffer << std::endl;
-
-            for (char byte : buffer) {
-                if ('\n' == byte) {
+            for (int idx = 0; idx < 100; idx++) {
+                if ('\n' == buffer[idx]) {
                     offset++;
                 }
             }
-            DEBUG("offset: " << offset);
         }
-    }
+    };
+    std::cout << std::endl;
 }

@@ -69,6 +69,7 @@ int main() {
                 if (errno == EAGAIN || errno == EWOULDBLOCK) {
                     // No incoming connection, continue with other tasks
                     // (non-blocking)
+                    std::this_thread::sleep_for(std::chrono::milliseconds(200));
                     continue;
                 } else {
                     // Other error occurred
@@ -92,23 +93,21 @@ void handle_sigpipe(int signum) {
 }
 
 int handleConnection(int client_sockfd, std::vector<std::string> &allData) {
+    char buffer[BUFFER_SIZE];
     try {
         if (client_sockfd == -1) {
             // Output an error message if socket accepting failed
             std::cerr << "Socket accepting failed." << std::endl;
-            return 1;  // Exit the program with an error code
+            return -1;  // Exit the program with an error code
         }
-        char buffer[BUFFER_SIZE];
         while (true) {
             // Read data from the client into the buffer
             // the +1 moves the poiner of the buffer to the next index
-            auto bytesRead = read(client_sockfd, buffer, sizeof(buffer) - 1);
-
-            // ! TODO this will prevent messages larger than 99 chars
-            if (bytesRead <= 0 || bytesRead + 1 >= BUFFER_SIZE) {
+            ssize_t bytesRead = read(client_sockfd, buffer, sizeof(buffer) - 1);
+            if (-1 == bytesRead) {
                 std::cerr << "Error reading from socket." << std::endl;
                 close(client_sockfd);
-                return 1;
+                return -1;
             }
 
             // Null-terminate the buffer
@@ -154,7 +153,7 @@ void handleWrite(int client_sockfd, std::vector<std::string> &allData,
 
 void handleRead(char buffer[100], std::vector<std::string> &allData,
                 int client_sockfd, int &retFlag) {
-        // limiting reads to the size of 1 char (int4)
+    // limiting reads to the size of 1 char (int4)
     int idx = buffer[1] - '0';
     std::cout << "Index requested: " << buffer[1] << std::endl;
     if (buffer[1] == '\n' || buffer[1] == '\0' || buffer[1] == '\r') {
