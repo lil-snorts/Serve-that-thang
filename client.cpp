@@ -2,6 +2,8 @@
 
 #include "logger.h"
 
+#define DEBUG_ENABLED true
+
 const char READ = 'R';
 const char WRITE = 'W';
 
@@ -85,7 +87,7 @@ int readFromSocket(ssize_t &bytesRead, int clientSocket, char buffer[100],
         } else if (0 == bytesRead) {
             DEBUG("encountered EOF")
             if (messageInSocket.size() > 0) {
-                std::cout << messageInSocket << std::endl;
+                log(messageInSocket);
             }
             return 0;
         } else {
