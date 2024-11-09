@@ -1,4 +1,5 @@
 
+#include <string.h>
 #include <time.h>
 
 #include <iostream>
@@ -12,3 +13,4 @@
 
 void log(const std::string toLog);
 void log(char* toLog);
+void log(std::ostream& toLog);

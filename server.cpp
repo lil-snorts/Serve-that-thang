@@ -55,6 +55,9 @@ int main() {
 
     struct sockaddr_in client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
+
+    log("server has started");
+
     try {
         while (true) {
             int new_sockfd = accept(sockfd, (struct sockaddr *)&client_addr,
@@ -69,7 +72,7 @@ int main() {
                     continue;
                 } else {
                     // Other error occurred
-                    log("Error accepting connection: ");
+                    log(std::cout << "Error accepting connection: ");
                 }
             } else {
                 std::thread thread(handleConnection, new_sockfd,
@@ -168,9 +171,8 @@ void handleRead(char buffer[100], std::vector<std::string> &allData,
 
     for (idx; idx < allData.size(); idx++) {
         // TODO catch error
-        std::cout << "sending: " << allData[idx]
-                  << ", flag is :" << (1 + idx == allData.size() ? 0 : MSG_MORE)
-                  << "\n";
+        log(std::cout << "sending: " << allData[idx] << ", flag is :"
+                      << (1 + idx == allData.size() ? 0 : MSG_MORE) << "\n");
 
         send(client_sockfd, allData[idx].c_str(), allData[idx].size(),
              1 + idx == allData.size() ? 0 : MSG_MORE);

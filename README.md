@@ -83,6 +83,8 @@ The server code includes a `write` mutex to synchronize client access to the cha
   - possible fix is suffixing messages with Newlines `\n`
 - [x] When clients send a message and the readThread requests for new messages they will be treated as the same message ![alt text](readMeBugSection/image.png)
   - possible fix: server reads from the buffer, parses the messages then services each message.
+- [] client re-requests the initial payload from server.
+  - Possible error is the initial setting of the offset?
 
 ---
 
