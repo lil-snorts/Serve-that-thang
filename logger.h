@@ -5,12 +5,15 @@
 #include <iostream>
 #include <string>
 
+#define STR(toString) std::string(toString)
+
 #define DEBUG_ENABLED false
 #define DEBUG(output)                                  \
     if (DEBUG_ENABLED) {                               \
         std::cout << "DEBUG: " << output << std::endl; \
     }
 
-void log(const std::string toLog);
-void log(char* toLog);
-void log(std::ostream& toLog);
+char* getLocalTime();
+
+#define LOG(toLog) \
+    std::cout << getLocalTime() << "[" << toLog << "]" << std::endl;

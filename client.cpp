@@ -2,8 +2,6 @@
 
 #include "logger.h"
 
-#define DEBUG_ENABLED true
-
 const char READ = 'R';
 const char WRITE = 'W';
 
@@ -55,6 +53,8 @@ void readFromServer(int clientSocket) {
         readRequest = readRequest + std::string(1, '0' + offset);
         // readRequest = readRequest + std::string(1, '0');
         send(clientSocket, readRequest.c_str(), readRequest.size(), 0);
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         DEBUG("requesting data from server, Sent: " << readRequest);
 
         ssize_t bytesRead;
@@ -62,10 +62,10 @@ void readFromServer(int clientSocket) {
 
         switch (readFromSocket(bytesRead, clientSocket, buffer, offset)) {
             case -1:
-                std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+                std::this_thread::sleep_for(std::chrono::milliseconds(4000));
                 break;
             default:
-                std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
                 break;
         };
     }
@@ -77,9 +77,7 @@ int readFromSocket(ssize_t &bytesRead, int clientSocket, char buffer[100],
     // receiving data; will the string ever be printed or will it continuously
     // be appended to?
     std::string messageInSocket;
-    DEBUG(sizeof(&buffer) + " <buffer size");
     while ((bytesRead = read(clientSocket, buffer, sizeof(&buffer) - 1)) >= 0) {
-        DEBUG("bytes read>" + bytesRead)
         if (-1 == bytesRead) {
             // error encountered
             DEBUG("err")
@@ -87,7 +85,7 @@ int readFromSocket(ssize_t &bytesRead, int clientSocket, char buffer[100],
         } else if (0 == bytesRead) {
             DEBUG("encountered EOF")
             if (messageInSocket.size() > 0) {
-                log(messageInSocket);
+                LOG(messageInSocket);
             }
             return 0;
         } else {
@@ -98,6 +96,11 @@ int readFromSocket(ssize_t &bytesRead, int clientSocket, char buffer[100],
             for (int idx = 0; idx < 100; idx++) {
                 if ('\n' == buffer[idx]) {
                     offset++;
+                    DEBUG("Offset++")
+                } else if ('\0' == buffer[idx]) {
+                    offset++;
+                    DEBUG("Null terminator in the received buffer")
+                    break;
                 }
             }
             messageInSocket = messageInSocket + std::string(buffer);

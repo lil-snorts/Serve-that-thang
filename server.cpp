@@ -56,7 +56,7 @@ int main() {
     struct sockaddr_in client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
 
-    log("server has started");
+    LOG("server has started");
 
     try {
         while (true) {
@@ -72,7 +72,7 @@ int main() {
                     continue;
                 } else {
                     // Other error occurred
-                    log(std::cout << "Error accepting connection: ");
+                    LOG("Error accepting connection: ");
                 }
             } else {
                 std::thread thread(handleConnection, new_sockfd,
@@ -110,7 +110,7 @@ int handleConnection(int client_sockfd, std::vector<std::string> &allData) {
 
             // Null-terminate the buffer
             buffer[bytesRead] = '\0';
-            log(std::string("message was: " + std::string(buffer)));
+            LOG("message was: " + STR(buffer));
 
             // TODO why is this + size of char
             std::string bufStr(buffer + sizeof(char));
@@ -146,7 +146,7 @@ void handleWrite(int client_sockfd, std::vector<std::string> &allData,
     write_mutex.lock();
     sleeptimer(3);
     allData.push_back(bufStr);
-    std::cout << "Size of alldata: " << allData.size() << std::endl;
+    LOG("Size of alldata: " << allData.size());
     write_mutex.unlock();
     retFlag = SUCCESS_FLAG;
     return;
@@ -165,14 +165,13 @@ void handleRead(char buffer[100], std::vector<std::string> &allData,
         return;
     }
 
-    std::cout << "idx < allData.size " << (idx < allData.size())
-              << "\n\tidx: " << idx << " allData.size: " << allData.size()
-              << std::endl;
+    DEBUG("idx < allData.size " << (idx < allData.size()) << "\n\tidx: " << idx
+                                << " allData.size: " << allData.size());
 
     for (idx; idx < allData.size(); idx++) {
         // TODO catch error
-        log(std::cout << "sending: " << allData[idx] << ", flag is :"
-                      << (1 + idx == allData.size() ? 0 : MSG_MORE) << "\n");
+        LOG("sending: " << allData[idx] << ", flag is :"
+                        << (1 + idx == allData.size() ? 0 : MSG_MORE));
 
         send(client_sockfd, allData[idx].c_str(), allData[idx].size(),
              1 + idx == allData.size() ? 0 : MSG_MORE);
