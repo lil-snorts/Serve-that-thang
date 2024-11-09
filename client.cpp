@@ -1,6 +1,6 @@
 #include "client.h"
 
-#include "debug.h"
+#include "logger.h"
 
 const char READ = 'R';
 const char WRITE = 'W';
@@ -33,7 +33,7 @@ int main() {
 
         DEBUG("user inp: " << userInput);
 
-        userInput = "W" + userInput;
+        userInput = "W" + userInput + "\n";
         // send input
         send(clientSocket, userInput.c_str(), userInput.size(), 0);
     }
@@ -56,7 +56,7 @@ void readFromServer(int clientSocket) {
         DEBUG("requesting data from server, Sent: " << readRequest);
 
         ssize_t bytesRead;
-        DEBUG("data recieved:\n")
+        DEBUG("data received:\n")
 
         switch (readFromSocket(bytesRead, clientSocket, buffer, offset)) {
             case -1:
@@ -72,7 +72,7 @@ void readFromServer(int clientSocket) {
 int readFromSocket(ssize_t &bytesRead, int clientSocket, char buffer[100],
                    int &offset) {
     // TODO investigate if there is a race condition, where the socket keeps
-    // recieving data; will the string ever be printed or will it continiously
+    // receiving data; will the string ever be printed or will it continuously
     // be appended to?
     std::string messageInSocket;
     DEBUG(sizeof(&buffer) + " <buffer size");
@@ -84,12 +84,14 @@ int readFromSocket(ssize_t &bytesRead, int clientSocket, char buffer[100],
             return -1;
         } else if (0 == bytesRead) {
             DEBUG("encountered EOF")
-            std::cout << messageInSocket << std::endl;
+            if (messageInSocket.size() > 0) {
+                std::cout << messageInSocket << std::endl;
+            }
             return 0;
         } else {
             // Null-terminate the buffer
             buffer[bytesRead] = '\0';
-            DEBUG(buffer)
+            DEBUG("buffer output: " << buffer);
 
             for (int idx = 0; idx < 100; idx++) {
                 if ('\n' == buffer[idx]) {
@@ -101,7 +103,8 @@ int readFromSocket(ssize_t &bytesRead, int clientSocket, char buffer[100],
     };
 
     DEBUG("Unknown outcome")
-
-    std::cout << messageInSocket << std::endl;
+    if (messageInSocket.size() > 0) {
+        std::cout << messageInSocket << std::endl;
+    }
     return -1;
 }

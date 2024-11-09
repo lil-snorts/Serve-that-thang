@@ -3,7 +3,7 @@
 
 #include "server.h"
 
-#include "debug.h"
+#include "logger.h"
 
 std::mutex write_mutex;
 
@@ -69,8 +69,7 @@ int main() {
                     continue;
                 } else {
                     // Other error occurred
-                    std::cerr << "Error accepting connection: " << errno
-                              << std::endl;
+                    log("Error accepting connection: ");
                 }
             } else {
                 std::thread thread(handleConnection, new_sockfd,
@@ -108,7 +107,9 @@ int handleConnection(int client_sockfd, std::vector<std::string> &allData) {
 
             // Null-terminate the buffer
             buffer[bytesRead] = '\0';
-            std::cout << "message was: " << buffer << std::endl;
+            log(std::string("message was: " + std::string(buffer)));
+
+            // TODO why is this + size of char
             std::string bufStr(buffer + sizeof(char));
 
             int retFlag = IN_PROGRESS_FLAG;
@@ -141,7 +142,8 @@ void handleWrite(int client_sockfd, std::vector<std::string> &allData,
                  std::string &bufStr, int &retFlag) {
     write_mutex.lock();
     sleeptimer(3);
-    allData.push_back(bufStr + "\n");
+    allData.push_back(bufStr);
+    std::cout << "Size of alldata: " << allData.size() << std::endl;
     write_mutex.unlock();
     retFlag = SUCCESS_FLAG;
     return;
@@ -151,12 +153,10 @@ void handleRead(char buffer[100], std::vector<std::string> &allData,
                 int client_sockfd, int &retFlag) {
     // limiting reads to the size of 1 char (int4)
     int idx = buffer[1] - '0';
-    std::cout << "Index requested: " << buffer[1] << std::endl;
     if (buffer[1] == '\n' || buffer[1] == '\0' || buffer[1] == '\r') {
         // treat like its a request for all logs
         idx = 0;
     } else if (idx >= allData.size()) {
-        std::cout << "Invalid index" << std::endl;
         send(client_sockfd, NULL, 0, 0);
         retFlag = SUCCESS_FLAG;
         return;
