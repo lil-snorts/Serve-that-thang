@@ -3,16 +3,12 @@
 
 #include "server.h"
 
+#include "logger.h"
+
 std::mutex write_mutex;
 
 #define SUCCESS_FLAG 1
 #define IN_PROGRESS_FLAG 0
-
-#define DEBUG_ENABLED true
-#define DEBUG(output)                                  \
-    if (DEBUG_ENABLED) {                               \
-        std::cout << "DEBUG: " << output << std::endl; \
-    }
 
 const int BUFFER_SIZE = 100;
 const char READ = 'R';
@@ -59,6 +55,9 @@ int main() {
 
     struct sockaddr_in client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
+
+    LOG("server has started");
+
     try {
         while (true) {
             int new_sockfd = accept(sockfd, (struct sockaddr *)&client_addr,
@@ -69,11 +68,11 @@ int main() {
                 if (errno == EAGAIN || errno == EWOULDBLOCK) {
                     // No incoming connection, continue with other tasks
                     // (non-blocking)
+                    std::this_thread::sleep_for(std::chrono::milliseconds(200));
                     continue;
                 } else {
                     // Other error occurred
-                    std::cerr << "Error accepting connection: " << errno
-                              << std::endl;
+                    LOG("Error accepting connection: ");
                 }
             } else {
                 std::thread thread(handleConnection, new_sockfd,
@@ -92,28 +91,28 @@ void handle_sigpipe(int signum) {
 }
 
 int handleConnection(int client_sockfd, std::vector<std::string> &allData) {
+    char buffer[BUFFER_SIZE];
     try {
         if (client_sockfd == -1) {
             // Output an error message if socket accepting failed
             std::cerr << "Socket accepting failed." << std::endl;
-            return 1;  // Exit the program with an error code
+            return -1;  // Exit the program with an error code
         }
-        char buffer[BUFFER_SIZE];
         while (true) {
             // Read data from the client into the buffer
             // the +1 moves the poiner of the buffer to the next index
-            auto bytesRead = read(client_sockfd, buffer, sizeof(buffer) - 1);
-
-            // ! TODO this will prevent messages larger than 99 chars
-            if (bytesRead <= 0 || bytesRead + 1 >= BUFFER_SIZE) {
+            ssize_t bytesRead = read(client_sockfd, buffer, sizeof(buffer) - 1);
+            if (-1 == bytesRead) {
                 std::cerr << "Error reading from socket." << std::endl;
                 close(client_sockfd);
-                return 1;
+                return -1;
             }
 
             // Null-terminate the buffer
             buffer[bytesRead] = '\0';
-            std::cout << "message was: " << buffer << std::endl;
+            LOG("message was: " + STR(buffer));
+
+            // TODO why is this + size of char
             std::string bufStr(buffer + sizeof(char));
 
             int retFlag = IN_PROGRESS_FLAG;
@@ -146,7 +145,8 @@ void handleWrite(int client_sockfd, std::vector<std::string> &allData,
                  std::string &bufStr, int &retFlag) {
     write_mutex.lock();
     sleeptimer(3);
-    allData.push_back(bufStr + "\n");
+    allData.push_back(bufStr);
+    LOG("Size of alldata: " << allData.size());
     write_mutex.unlock();
     retFlag = SUCCESS_FLAG;
     return;
@@ -154,28 +154,24 @@ void handleWrite(int client_sockfd, std::vector<std::string> &allData,
 
 void handleRead(char buffer[100], std::vector<std::string> &allData,
                 int client_sockfd, int &retFlag) {
-        // limiting reads to the size of 1 char (int4)
+    // limiting reads to the size of 1 char (int4)
     int idx = buffer[1] - '0';
-    std::cout << "Index requested: " << buffer[1] << std::endl;
     if (buffer[1] == '\n' || buffer[1] == '\0' || buffer[1] == '\r') {
         // treat like its a request for all logs
         idx = 0;
     } else if (idx >= allData.size()) {
-        std::cout << "Invalid index" << std::endl;
         send(client_sockfd, NULL, 0, 0);
         retFlag = SUCCESS_FLAG;
         return;
     }
 
-    std::cout << "idx < allData.size()" << (idx < allData.size()) << std::endl;
-    std::cout << "idx: " << idx << " allData.size: " << allData.size()
-              << std::endl;
+    DEBUG("idx < allData.size " << (idx < allData.size()) << "\n\tidx: " << idx
+                                << " allData.size: " << allData.size());
 
     for (idx; idx < allData.size(); idx++) {
         // TODO catch error
-        std::cout << "sending: " << allData[idx]
-                  << ", flag is :" << (1 + idx == allData.size() ? 0 : MSG_MORE)
-                  << "\n";
+        LOG("sending: " << allData[idx] << ", flag is :"
+                        << (1 + idx == allData.size() ? 0 : MSG_MORE));
 
         send(client_sockfd, allData[idx].c_str(), allData[idx].size(),
              1 + idx == allData.size() ? 0 : MSG_MORE);

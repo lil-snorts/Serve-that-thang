@@ -52,6 +52,7 @@ A simple chat server built in C++ that uses socket programming to handle multipl
   - [ ] Support larger payloads.
   - [x] Enforce client turn-taking to manage writes.
 - [x] Add a `read`/GET function for clients to retrieve chat logs.
+  - [ ] Support larger payloads.
 - [x] Implement mutexes for concurrent access management.
   - [x] Read requests are mutex-free for faster performance.
   - [x] Write requests are mutex-protected to avoid data race conditions.
@@ -82,6 +83,11 @@ The server code includes a `write` mutex to synchronize client access to the cha
   - possible fix is suffixing messages with Newlines `\n`
 - [x] When clients send a message and the readThread requests for new messages they will be treated as the same message ![alt text](readMeBugSection/image.png)
   - possible fix: server reads from the buffer, parses the messages then services each message.
+- [x] client re-requests the initial payload from server.
+  - Possible error is the initial setting of the offset?
+  - Investigation: the client is sending 2 read requests for offset 0 because it is not waiting for first response. Leading to a doubling of offset
+  - Temp solution: add a timed delay after each read call, this will give the server some time to respond.
+  - Ideal solution: add redundancy to each call so that if the server send a previous message it wont be duplicated for the client
 
 ---
 
