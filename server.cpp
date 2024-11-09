@@ -3,16 +3,12 @@
 
 #include "server.h"
 
+#include "debug.h"
+
 std::mutex write_mutex;
 
 #define SUCCESS_FLAG 1
 #define IN_PROGRESS_FLAG 0
-
-#define DEBUG_ENABLED true
-#define DEBUG(output)                                  \
-    if (DEBUG_ENABLED) {                               \
-        std::cout << "DEBUG: " << output << std::endl; \
-    }
 
 const int BUFFER_SIZE = 100;
 const char READ = 'R';
@@ -166,8 +162,8 @@ void handleRead(char buffer[100], std::vector<std::string> &allData,
         return;
     }
 
-    std::cout << "idx < allData.size()" << (idx < allData.size()) << std::endl;
-    std::cout << "idx: " << idx << " allData.size: " << allData.size()
+    std::cout << "idx < allData.size " << (idx < allData.size())
+              << "\n\tidx: " << idx << " allData.size: " << allData.size()
               << std::endl;
 
     for (idx; idx < allData.size(); idx++) {
