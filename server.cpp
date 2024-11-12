@@ -1,5 +1,5 @@
 // Write comments explaining the purpose of each method, variable and statements
-// below. Point out any bugs afterwards
+// below.
 
 #include "server.h"
 
@@ -18,29 +18,21 @@ int main() {
     std::vector<std::string> allData;
     // Set up the signal handler for SIGPIPE
     signal(SIGPIPE, handle_sigpipe);
-
-    // Create a socket using the socket() function
-    // AF_INET: Address family for IPv4
-    // SOCK_STREAM: Socket type for TCP (stream-oriented)
-    // 0: Protocol (0 means the default protocol for the socket type)
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-    // Check if the socket was created successfully
     if (-1 == sockfd) {
         // Output an error message if socket creation failed
         std::cerr << "Socket creation failed" << std::endl;
     }
+
     // Set the socket to non-blocking mode
     int flags = fcntl(sockfd, F_GETFL, 0);
     fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
 
-    // Define a sockaddr_in structure to specify the server address
     struct sockaddr_in server_addr;
-    server_addr.sin_family = AF_INET;  // Set the address family to IPv4
+    server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
-    // Accept connections from any IP address
 
-    // Set the port number to 8080 (convert to network byte order)
     server_addr.sin_port = htons(8080);
 
     if (bind(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) ==
@@ -66,12 +58,10 @@ int main() {
                 // Handle non-blocking case: no connection available
                 // (EAGAIN/EWOULDBLOCK)
                 if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                    // No incoming connection, continue with other tasks
-                    // (non-blocking)
+                    // Sleep to prevent CPU hog
                     std::this_thread::sleep_for(std::chrono::milliseconds(200));
                     continue;
                 } else {
-                    // Other error occurred
                     LOG("Error accepting connection: ");
                 }
             } else {
@@ -94,13 +84,10 @@ int handleConnection(int client_sockfd, std::vector<std::string> &allData) {
     char buffer[BUFFER_SIZE];
     try {
         if (client_sockfd == -1) {
-            // Output an error message if socket accepting failed
             std::cerr << "Socket accepting failed." << std::endl;
-            return -1;  // Exit the program with an error code
+            return -1;
         }
         while (true) {
-            // Read data from the client into the buffer
-            // the +1 moves the poiner of the buffer to the next index
             ssize_t bytesRead = read(client_sockfd, buffer, sizeof(buffer) - 1);
             if (-1 == bytesRead) {
                 std::cerr << "Error reading from socket." << std::endl;
@@ -112,8 +99,7 @@ int handleConnection(int client_sockfd, std::vector<std::string> &allData) {
             buffer[bytesRead] = '\0';
             LOG("message was: " + STR(buffer));
 
-            // TODO why is this + size of char
-            std::string bufStr(buffer + sizeof(char));
+            std::string bufStr(buffer);
 
             int retFlag = IN_PROGRESS_FLAG;
             switch (buffer[0]) {
@@ -157,7 +143,6 @@ void handleRead(char buffer[100], std::vector<std::string> &allData,
     // limiting reads to the size of 1 char (int4)
     int idx = buffer[1] - '0';
     if (buffer[1] == '\n' || buffer[1] == '\0' || buffer[1] == '\r') {
-        // treat like its a request for all logs
         idx = 0;
     } else if (idx >= allData.size()) {
         send(client_sockfd, NULL, 0, 0);
