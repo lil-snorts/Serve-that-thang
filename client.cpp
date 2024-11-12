@@ -12,7 +12,6 @@ void handleError(int errCode) {
 int main() {
     int clientSocket = socket(AF_INET, SOCK_STREAM, 0);
     fcntl(clientSocket, F_SETFL, O_NONBLOCK);
-    // fcntl(clientSocket, F_SETFL, 0);
     sockaddr_in serverAddy;
 
     serverAddy.sin_family = AF_INET;
@@ -21,10 +20,10 @@ int main() {
 
     connect(clientSocket, (struct sockaddr *)&serverAddy, sizeof(serverAddy));
 
-    // TODO get a thread to do this always
     DEBUG("starting reader thread")
     std::thread readerThread(readFromServer, clientSocket);
     readerThread.detach();
+
     DEBUG("starting writer thread")
     while (true) {
         // wait for input from the user
@@ -48,10 +47,7 @@ void readFromServer(int clientSocket) {
     while (true) {
         std::string readRequest(1, READ);
 
-        // TODO this is assuming that the number is 0 <= num <= 9
-
         readRequest = readRequest + std::string(1, '0' + offset);
-        // readRequest = readRequest + std::string(1, '0');
         send(clientSocket, readRequest.c_str(), readRequest.size(), 0);
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
@@ -79,7 +75,6 @@ int readFromSocket(ssize_t &bytesRead, int clientSocket, char buffer[100],
     std::string messageInSocket;
     while ((bytesRead = read(clientSocket, buffer, sizeof(&buffer) - 1)) >= 0) {
         if (-1 == bytesRead) {
-            // error encountered
             DEBUG("err")
             return -1;
         } else if (0 == bytesRead) {
@@ -89,7 +84,6 @@ int readFromSocket(ssize_t &bytesRead, int clientSocket, char buffer[100],
             }
             return 0;
         } else {
-            // Null-terminate the buffer
             buffer[bytesRead] = '\0';
             DEBUG("buffer output: " << buffer);
 

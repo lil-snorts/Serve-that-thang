@@ -52,15 +52,14 @@ A simple chat server built in C++ that uses socket programming to handle multipl
   - [ ] Support larger payloads.
   - [x] Enforce client turn-taking to manage writes.
 - [x] Add a `read`/GET function for clients to retrieve chat logs.
-  - [ ] Support larger payloads.
 - [x] Implement mutexes for concurrent access management.
   - [x] Read requests are mutex-free for faster performance.
   - [x] Write requests are mutex-protected to avoid data race conditions.
 - [ ] Enable usernames for message identification.
-- [ ] Add timestamps for message tracking.
+- [x] Add timestamps for message tracking.
 - [ ] Implement message log redundancy and persistence.
-- [ ] **Thread Accumulation**: Currently, threads are only added to the `client_serverThreads` vector without cleanup.
 - [ ] **Idle Timeout**: Threads should have an idle timeout mechanism to avoid resource wastage.
+- [ ] Unit tests
 
 ### Client
 
@@ -68,6 +67,8 @@ A simple chat server built in C++ that uses socket programming to handle multipl
 - [x] Auto-update chat log to reflect current messages.
 - [x] Parse all entered data as `write` requests.
 - [ ] Enable username attachment for chat messages.
+- [ ] Enable READ requests for indexes greater than 9
+- [ ] Unit tests
 
 ## Contributing
 
